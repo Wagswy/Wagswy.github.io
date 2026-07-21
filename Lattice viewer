@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Solid State & Crystal Studio (JEE / Olympiad / College Edition)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-main: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%);
+            --panel-bg: rgba(15, 23, 42, 0.65);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background: var(--bg-main); color: var(--text-primary); overflow: hidden; width: 100vw; height: 100vh; display: flex; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+        #viewport { flex: 1; position: relative; height: 100vh; }
+        
+        /* Expandable HUD Panel */
+        #info-hud {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 360px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+            z-index: 20;
+            pointer-events: auto;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #hud-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid transparent;
+            transition: background 0.2s;
+        }
+        
+        #hud-header:hover { background: rgba(255,255,255,0.08); }
+        
+        #hud-header h3 { font-size: 1.05rem; color: var(--accent-blue); display: flex; align-items: center; gap: 8px; font-weight: 700; margin: 0; }
+        .toggle-icon { font-size: 0.8rem; color: var(--text-secondary); transition: transform 0.3s ease; }
+        
+        #hud-content {
+            padding: 0 16px 16px 16px;
+            max-height: 80vh;
+            overflow-y: auto;
+            transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+            opacity: 1;
+        }
+
+        #info-hud.collapsed #hud-content { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; overflow: hidden; }
+        #info-hud.collapsed #hud-header { border-bottom: none; }
+        #info-hud.collapsed .toggle-icon { transform: rotate(-180deg); }
+
+        .hud-tag { font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 600; letter-spacing: 0.5px; }
+
+        .stat-group { margin-top: 16px; }
+        .stat-group-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 700; border-bottom: 1px solid var(--panel-border); padding-bottom: 4px; }
+        
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px; align-items: center; }
+        .stat-label { color: #cbd5e1; }
+        .stat-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; color: #ffffff; text-align: right; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; }
+
+        /* Left Control Sidebar */
+        #sidebar {
+            width: 360px;
+            height: 100vh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--panel-border);
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+        }
+
+        .app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .app-header h2 { font-size: 1.25rem; color: #fff; font-weight: 800; letter-spacing: -0.5px; }
+
+        .control-card { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--panel-border); border-radius: 10px; padding: 14px; }
+        .card-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 700; margin-bottom: 12px; }
+
+        .field-group { margin-bottom: 12px; }
+        .field-group:last-child { margin-bottom: 0; }
+        
+        label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-primary); margin-bottom: 6px; align-items: center; font-weight: 500; }
+        
+        select, input[type="number"], button {
+            width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--panel-border);
+            border-radius: 6px; color: #fff; font-size: 0.85rem; outline: none; transition: 0.2s;
+            cursor: pointer;
+        }
+        select:focus, input[type="number"]:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px var(--accent-glow); }
+        select option { background: #0f172a; color: #fff; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .grid-3 input { text-align: center; font-family: monospace; }
+
+        /* Custom Checkbox Toggles */
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 6px 0; margin: 0; }
+        .switch { position: relative; width: 36px; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+        .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #94a3b8; border-radius: 50%; transition: 0.3s; }
+        input[type="checkbox"] { display: none; }
+        input[type="checkbox"]:checked + .switch { background: var(--accent-blue); border-color: var(--accent-blue); }
+        input[type="checkbox"]:checked + .switch::after { transform: translateX(16px); background: #0f172a; }
+
+        /* Range Sliders */
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; margin: 8px 0; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-blue); cursor: pointer; transition: 0.2s; }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 0 10px var(--accent-glow); }
+
+        /* Legend Panel */
+        .legend-grid { display: flex; flex-direction: column; gap: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; font-weight: 500; color: var(--text-primary); }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,0.2); }
+
+        .btn-reset {
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent-blue);
+            font-weight: 600; cursor: pointer; transition: 0.2s; padding: 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+            margin-top: auto;
+        }
+        .btn-reset:hover { background: var(--accent-blue); color: #020617; box-shadow: 0 0 16px var(--accent-glow); }
+        
+        #statNotes { font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px; margin-top: 4px; border: 1px solid rgba(255,255,255,0.05); }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="app-header">
+        <h2>Crystal Studio 3D</h2>
+        <span class="hud-tag">JEE Advanced</span>
+    </div>
+
+    <!-- Crystal Lattice Preset Selection -->
+    <div class="control-card">
+        <div class="card-title">Lattice & Structure Presets</div>
+        <div class="field-group">
+            <select id="presetSelect">
+                <optgroup label="Basic Lattices">
+                    <option value="BCC">Body-Centered Cubic (BCC)</option>
+                    <option value="SC">Simple Cubic (SC)</option>
+                    <option value="FCC">Face-Centered Cubic (FCC / CCP)</option>
+                    <option value="HCP">Hexagonal Close Packing (HCP)</option>
+                </optgroup>
+                <optgroup label="Ionic & Covalent Crystals">
+                    <option value="NaCl">NaCl (Rock Salt Structure)</option>
+                    <option value="CsCl">CsCl Structure</option>
+                    <option value="ZnS_Blende">ZnS (Zinc Blende - Cubic Sphalerite)</option>
+                    <option value="CaF2">CaF2 (Fluorite Structure)</option>
+                    <option value="Na2O">Na2O (Anti-Fluorite Structure)</option>
+                    <option value="Diamond">Diamond Cubic Structure</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="field-group">
+            <label><span>Supercell Grid Size</span></label>
+            <select id="gridSelect">
+                <option value="1">1 Ã— 1 Ã— 1 Unit Cell</option>
+                <option value="2">2 Ã— 2 Ã— 2 Supercell Grid</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Voids Controls -->
+    <div class="control-card">
+        <div class="card-title">Void Visualizer</div>
+        <div class="field-group">
+            <select id="voidSelect"></select>
+        </div>
+        <div class="field-group">
+            <label class="toggle-row">
+                <span>Use True Radius Ratios (JEE)</span>
+                <input type="checkbox" id="trueRatioToggle" checked>
+                <div class="switch"></div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Crystal System -->
+    <div class="control-card" style="display: none;" id="systemCard">
+        <div class="card-title">Crystal System Geometry</div>
+        <div class="field-group">
+            <select id="systemSelect">
+                <option value="cubic">Cubic (a=b=c, Î±=Î²=Î³=90Â°)</option>
+                <option value="tetrag">Tetragonal (a=bâ‰ c, Î±=Î²=Î³=90Â°)</option>
+                <option value="ortho">Orthorhombic (aâ‰ bâ‰ c, Î±=Î²=Î³=90Â°)</option>
+                <option value="hex">Hexagonal (a=bâ‰ c, Î±=Î²=90Â°, Î³=120Â°)</option>
+                <option value="rhombo">Rhombohedral / Trigonal (a=b=c, Î±=Î²=Î³â‰ 90Â°)</option>
+                <option value="mono">Monoclinic (aâ‰ bâ‰ c, Î±=Î³=90Â°, Î²â‰ 90Â°)</option>
+                <option value="triclinic">Triclinic (aâ‰ bâ‰ c, Î±â‰ Î²â‰ Î³â‰ 90Â°)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Rendering Controls -->
+    <div class="control-card">
+        <div class="card-title">Appearance & Rendering</div>
+        <div class="field-group">
+            <label><span>Atom Radius Scale</span> <span id="radiusVal">0.22</span></label>
+            <input type="range" id="radiusSlider" min="0.08" max="0.45" step="0.01" value="0.22">
+        </div>
+        <div class="field-group">
+            <label><span>Host Atom Opacity</span> <span id="opacityVal">1.00</span></label>
+            <input type="range" id="opacitySlider" min="0.10" max="1.00" step="0.05" value="1.00">
+        </div>
+        <label class="toggle-row">
+            <span>Show Lattice Atoms</span>
+            <input type="checkbox" id="showAtoms" checked>
+            <div class="switch"></div>
+        </label>
+        <label class="toggle-row">
+            <span>Unit Cell Boundaries</span>
+            <input type="checkbox" id="showBox" checked>
+            <div class="switch"></div>
+        </label>
+        <label class="toggle-row">
+            <span>Slice Solid at Boundaries</span>
+            <input type="checkbox" id="clipAtoms">
+            <div class="switch"></div>
+        </label>
+        <label class="toggle-row">
+            <span>Auto-Rotate Camera</span>
+            <input type="checkbox" id="autoRotate">
+            <div class="switch"></div>
+        </label>
+    </div>
+
+    <!-- Miller Indices -->
+    <div class="control-card">
+        <div class="card-title">Miller Plane (h k l)</div>
+        <label class="toggle-row" style="margin-bottom: 8px;">
+            <span>Render Slicing Plane</span>
+            <input type="checkbox" id="showPlane">
+            <div class="switch"></div>
+        </label>
+        <div class="grid-3">
+            <input type="number" id="planeH" value="1" min="0" max="3" title="h (intercept a/h)">
+            <input type="number" id="planeK" value="1" min="0" max="3" title="k (intercept b/k)">
+            <input type="number" id="planeL" value="1" min="0" max="3" title="l (intercept c/l)">
+        </div>
+    </div>
+
+    <!-- Color Legend Card -->
+    <div class="control-card">
+        <div class="card-title">Color Legend</div>
+        <div class="legend-grid" id="legendBox"></div>
+    </div>
+
+    <button class="btn-reset" id="resetCamBtn">Reset Camera View</button>
+</div>
+
+<div id="viewport">
+    <!-- Retractable Info HUD -->
+    <div id="info-hud">
+        <div id="hud-header" onclick="toggleHud()">
+            <h3 id="infoTitle">Body-Centered Cubic <span class="hud-tag" id="hudTag">BCC</span></h3>
+            <span class="toggle-icon">â–¼</span>
+        </div>
+        
+        <div id="hud-content">
+            <div class="stat-group">
+                <div class="stat-group-title">Physics & Geometry</div>
+                <div class="stat-row"><span class="stat-label">Effective Atoms (Z):</span><span class="stat-val" id="statZ">2</span></div>
+                <div class="stat-row"><span class="stat-label">Coordination Number:</span><span class="stat-val" id="statCN">8</span></div>
+                <div class="stat-row"><span class="stat-label">Packing Efficiency:</span><span class="stat-val" id="statPE">68%</span></div>
+                <div class="stat-row"><span class="stat-label">Lattice Relation:</span><span class="stat-val" id="statRel">aâˆš3 = 4r</span></div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-group-title">Void Analysis (Per Unit Cell)</div>
+                <div class="stat-row"><span class="stat-label">Tetrahedral Voids (Td):</span><span class="stat-val" id="statTd">12 (Eff)</span></div>
+                <div class="stat-row"><span class="stat-label">Octahedral Voids (Oh):</span><span class="stat-val" id="statOh">6 (Eff)</span></div>
+                <div class="stat-row"><span class="stat-label">Cubic Voids (Cb):</span><span class="stat-val" id="statCubic">0</span></div>
+                <div class="stat-row"><span class="stat-label">Limiting Ratio (r/R):</span><span class="stat-val" id="statRatio">Td: 0.291 | Oh: 0.155</span></div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-group-title">JEE Concept Notes</div>
+                <div id="statNotes"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let scene, camera, renderer, controls, latticeGroup;
+
+// Refined Palette
+const PALETTE = {
+    hostAtom: 0x38bdf8,      // Light Blue
+    secondaryAtom: 0xf43f5e, // Rose
+    anionAtom: 0x10b981,     // Emerald Green
+    voidTd: 0xa855f7,        // Purple (Td)
+    voidOh: 0xf59e0b,        // Amber (Oh)
+    voidCubic: 0xec4899,     // Pink
+    millerPlane: 0xffffff,   // White translucent
+    wireframe: 0x475569,     // Slate
+};
+
+const PRESETS = {
+    BCC: {
+        name: "Body-Centered Cubic", tag: "BCC", Z: "2", CN: "8", PE: "68%", Rel: "aâˆš3 = 4r", system: "cubic",
+        tdCount: "12 Effective (24 Sites)", ohCount: "6 Effective (18 Sites)", cubicCount: "0", ratio: "Td: 0.291 | Oh: 0.155",
+        notes: "BCC Voids Breakdown:\nâ€¢ Distorted Td Voids: 24 sites on 6 faces (4 per face, shared by 2 cells) = 12 Effective Voids.\nâ€¢ Distorted Oh Voids: 6 face centers (6 Ã— 1/2 = 3) + 12 edge centers (12 Ã— 1/4 = 3) = 6 Effective Voids.\nâ€¢ Note: In BCC, Td voids (0.291) are geometrically larger than Oh voids (0.155).",
+        voids: [
+            { id: "none", label: "Hide Voids" },
+            { id: "bcc_td", label: "Distorted Td Voids (12 Effective)" },
+            { id: "bcc_oh", label: "Distorted Oh Voids (6 Effective)" },
+            { id: "both", label: "All BCC Voids (12 Td + 6 Oh)" }
+        ]
+    },
+    SC: {
+        name: "Simple Cubic", tag: "SC", Z: "1", CN: "6", PE: "52.4%", Rel: "a = 2r", system: "cubic",
+        tdCount: "0", ohCount: "0", cubicCount: "1", ratio: "0.732 (Cubic)",
+        notes: "Primitive cubic unit cell. Atoms touch along unit cell edges. Central cubic void accommodates maximum radius ratio r/R = 0.732.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "cb", label: "Cubic Void (Center)" }]
+    },
+    FCC: {
+        name: "Face-Centered Cubic", tag: "FCC / CCP", Z: "4", CN: "12", PE: "74%", Rel: "aâˆš2 = 4r", system: "cubic",
+        tdCount: "8", ohCount: "4", cubicCount: "0", ratio: "Td: 0.225 | Oh: 0.414",
+        notes: "ABCABC close packing. Td voids lie completely inside on body diagonals (8 total). Oh voids are at the body center (1) + edge centers (12 Ã— 1/4 = 3).",
+        voids: [
+            { id: "none", label: "Hide Voids" },
+            { id: "td", label: "Tetrahedral Voids (Td)" },
+            { id: "oh", label: "Octahedral Voids (Oh)" },
+            { id: "both", label: "All Voids (Td + Oh)" }
+        ]
+    },
+    HCP: {
+        name: "Hexagonal Close Packing", tag: "HCP", Z: "6", CN: "12", PE: "74%", Rel: "c/a = âˆš(8/3) â‰ˆ 1.633", system: "hex",
+        tdCount: "12", ohCount: "6", cubicCount: "0", ratio: "Td: 0.225 | Oh: 0.414",
+        notes: "ABAB hexagonal close packing modeled as a full 3-cell hexagonal prism for visual clarity.",
+        voids: [
+            { id: "none", label: "Hide Voids" },
+            { id: "hcp_td", label: "HCP Tetrahedral Voids" },
+            { id: "hcp_oh", label: "HCP Octahedral Voids" }
+        ]
+    },
+    NaCl: {
+        name: "Rock Salt (NaCl)", tag: "NaCl", Z: "4 Naâº + 4 Clâ»", CN: "6 : 6", PE: "79.3%", Rel: "râº + râ» = a/2", system: "cubic",
+        tdCount: "8 (Empty)", ohCount: "4 (Occupied by Naâº)", cubicCount: "0", ratio: "râº/râ» = 0.414",
+        notes: "Clâ» forms FCC lattice. Naâº completely occupies all 4 Octahedral Voids.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Unoccupied Td Voids" }, { id: "oh", label: "Occupied Oh Voids (Naâº)" }]
+    },
+    CsCl: {
+        name: "Cesium Chloride", tag: "CsCl", Z: "1 Csâº + 1 Clâ»", CN: "8 : 8", PE: "68%", Rel: "râº + râ» = aâˆš3/2", system: "cubic",
+        tdCount: "0", ohCount: "0", cubicCount: "1 (Occupied by Csâº)", ratio: "râº/râ» = 0.732",
+        notes: "Clâ» forms Simple Cubic lattice. Csâº occupies the central Cubic Void.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "cb", label: "Occupied Cubic Void (Csâº)" }]
+    },
+    ZnS_Blende: {
+        name: "Zinc Blende (Sphalerite)", tag: "Cubic ZnS", Z: "4 ZnÂ²âº + 4 SÂ²â»", CN: "4 : 4", PE: "74%", Rel: "râº + râ» = aâˆš3/4", system: "cubic",
+        tdCount: "8 (50% Filled)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "râº/râ» = 0.225",
+        notes: "SÂ²â» forms FCC lattice. ZnÂ²âº occupies 50% alternate Tetrahedral Voids.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "All Td Sites (4 ZnÂ²âº + 4 Empty)" }, { id: "oh", label: "Unoccupied Oh Voids" }]
+    },
+    CaF2: {
+        name: "Fluorite (CaF2)", tag: "CaF2", Z: "4 CaÂ²âº + 8 Fâ»", CN: "8 : 4", PE: "74%", Rel: "râº + râ» = aâˆš3/4", system: "cubic",
+        tdCount: "8 (100% Filled by Fâ»)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "râº/râ» = 0.225",
+        notes: "CaÂ²âº forms FCC lattice. Fâ» occupies ALL 8 Tetrahedral Voids.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Occupied Td Voids (Fâ»)" }]
+    },
+    Na2O: {
+        name: "Anti-Fluorite (Na2O)", tag: "Na2O", Z: "4 OÂ²â» + 8 Naâº", CN: "4 : 8", PE: "74%", Rel: "râº + râ» = aâˆš3/4", system: "cubic",
+        tdCount: "8 (100% Filled by Naâº)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "râº/râ» = 0.225",
+        notes: "OÂ²â» forms FCC lattice. Naâº occupies ALL 8 Tetrahedral Voids.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Occupied Td Voids (Naâº)" }]
+    },
+    Diamond: {
+        name: "Diamond Cubic", tag: "C Diamond", Z: "8 Carbon Atoms", CN: "4", PE: "34%", Rel: "aâˆš3 = 8r", system: "cubic",
+        tdCount: "8 (50% Filled)", ohCount: "0", cubicCount: "0", ratio: "Covalent",
+        notes: "FCC Carbon lattice + 4 internal Carbon atoms occupying alternate Td voids.",
+        voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Alternate Td Voids" }]
+    }
+};
+
+// UI Interaction
+function toggleHud() {
+    const hud = document.getElementById('info-hud');
+    hud.classList.toggle('collapsed');
+}
+
+function init() {
+    const container = document.getElementById('viewport');
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+    resetCamera();
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // Alpha true for CSS background
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.localClippingEnabled = true;
+    container.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight1.position.set(10, 15, 10);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.5);
+    dirLight2.position.set(-10, -10, -10);
+    scene.add(dirLight2);
+
+    latticeGroup = new THREE.Group();
+    scene.add(latticeGroup);
+
+    // Event Listeners
+    window.addEventListener('resize', onWindowResize);
+    document.getElementById('presetSelect').addEventListener('change', () => {
+        const pKey = document.getElementById('presetSelect').value;
+        if (PRESETS[pKey]) document.getElementById('systemSelect').value = PRESETS[pKey].system || 'cubic';
+        updateVoidDropdownOptions();
+        buildLattice();
+    });
+
+    document.getElementById('systemSelect').addEventListener('change', buildLattice);
+    document.querySelectorAll('select, input').forEach(el => el.addEventListener('change', buildLattice));
+
+    document.getElementById('radiusSlider').addEventListener('input', (e) => {
+        document.getElementById('radiusVal').innerText = parseFloat(e.target.value).toFixed(2);
+        buildLattice();
+    });
+
+    document.getElementById('opacitySlider').addEventListener('input', (e) => {
+        document.getElementById('opacityVal').innerText = parseFloat(e.target.value).toFixed(2);
+        buildLattice();
+    });
+
+    document.getElementById('resetCamBtn').addEventListener('click', resetCamera);
+
+    updateVoidDropdownOptions();
+    buildLattice();
+}
+
+function resetCamera() {
+    camera.position.set(3.5, 3.0, 4.5);
+    if(controls) controls.target.set(0, 0, 0);
+}
+
+function updateVoidDropdownOptions() {
+    const type = document.getElementById('presetSelect').value;
+    const voidSelect = document.getElementById('voidSelect');
+    voidSelect.innerHTML = '';
+    
+    const preset = PRESETS[type];
+    if (preset && preset.voids) {
+        preset.voids.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.innerText = v.label;
+            voidSelect.appendChild(opt);
+        });
+    }
+}
+
+function getLatticeVectors(sys) {
+    let a = 1.0, b = 1.0, c = 1.0, alpha = 90, beta = 90, gamma = 90;
+    if (sys === 'tetrag') { c = 1.4; }
+    else if (sys === 'ortho') { a = 0.85; b = 1.15; c = 1.45; }
+    else if (sys === 'hex') { c = 1.633; gamma = 120; }
+    else if (sys === 'rhombo') { alpha = 82; beta = 82; gamma = 82; }
+    else if (sys === 'mono') { a = 0.85; b = 1.0; c = 1.3; beta = 105; }
+    else if (sys === 'triclinic') { a = 0.8; b = 1.0; c = 1.2; alpha = 75; beta = 100; gamma = 110; }
+
+    const ar = alpha * Math.PI / 180, br = beta * Math.PI / 180, gr = gamma * Math.PI / 180;
+    const va = new THREE.Vector3(a, 0, 0);
+    const vb = new THREE.Vector3(b * Math.cos(gr), b * Math.sin(gr), 0);
+    const cx = c * Math.cos(br);
+    const cy = c * (Math.cos(ar) - Math.cos(br) * Math.cos(gr)) / Math.sin(gr);
+    const cz = c * Math.sqrt(Math.max(0, 1 - Math.cos(ar)**2 - Math.cos(br)**2 - Math.cos(gr)**2 + 2 * Math.cos(ar) * Math.cos(br) * Math.cos(gr))) / Math.sin(gr);
+    const vc = new THREE.Vector3(cx, cy, cz);
+
+    return { va, vb, vc };
+}
+
+function fracToCart(u, v, w, va, vb, vc) {
+    return new THREE.Vector3().addScaledVector(va, u).addScaledVector(vb, v).addScaledVector(vc, w);
+}
+
+function createSphere(pos, r, color, opacity = 1.0, clippingPlanes = null, isVoid = false) {
+    const group = new THREE.Group();
+    const geo = new THREE.SphereGeometry(r, 32, 32);
+    
+    let mat = isVoid ? 
+        new THREE.MeshPhysicalMaterial({ color: color, emissive: color, emissiveIntensity: 0.5, roughness: 0.2, transmission: 0.1, transparent: true, opacity: 0.85, clippingPlanes: clippingPlanes || [] }) :
+        new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.1, transparent: opacity < 0.99, opacity: opacity, side: (clippingPlanes && clippingPlanes.length > 0) ? THREE.DoubleSide : THREE.FrontSide, clippingPlanes: clippingPlanes || [] });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    group.add(mesh);
+
+    if (clippingPlanes && clippingPlanes.length > 0 && !isVoid) {
+        clippingPlanes.forEach(plane => {
+            const capGeo = new THREE.CircleGeometry(r, 32);
+            const capMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, clippingPlanes: clippingPlanes.filter(p => p !== plane), transparent: opacity < 0.99, opacity: opacity });
+            const capMesh = new THREE.Mesh(capGeo, capMat);
+            capMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), plane.normal.clone().negate());
+            const dist = plane.distanceToPoint(pos);
+            capMesh.position.addScaledVector(plane.normal, -dist);
+            if (Math.abs(dist) < r) group.add(capMesh);
+        });
+    }
+
+    group.position.copy(pos);
+    return group;
+}
+
+function buildLattice() {
+    while(latticeGroup.children.length > 0) latticeGroup.remove(latticeGroup.children[0]);
+
+    const type = document.getElementById('presetSelect').value;
+    const sys = document.getElementById('systemSelect').value;
+    const voidType = document.getElementById('voidSelect').value;
+    const rScale = parseFloat(document.getElementById('radiusSlider').value);
+    const atomOpacity = parseFloat(document.getElementById('opacitySlider').value);
+    const gridN = parseInt(document.getElementById('gridSelect').value);
+    const useTrueRatio = document.getElementById('trueRatioToggle').checked;
+
+    const showAtoms = document.getElementById('showAtoms').checked;
+    const showBox = document.getElementById('showBox').checked;
+    const clipAtoms = document.getElementById('clipAtoms').checked;
+    controls.autoRotate = document.getElementById('autoRotate').checked;
+
+    const info = PRESETS[type] || PRESETS.BCC;
+    document.getElementById('infoTitle').innerHTML = `${info.name} <span class="hud-tag">${info.tag}</span>`;
+    document.getElementById('statZ').innerText = info.Z;
+    document.getElementById('statCN').innerText = info.CN;
+    document.getElementById('statPE').innerText = info.PE;
+    document.getElementById('statRel').innerText = info.Rel;
+    document.getElementById('statTd').innerText = info.tdCount;
+    document.getElementById('statOh').innerText = info.ohCount;
+    document.getElementById('statCubic').innerText = info.cubicCount;
+    document.getElementById('statRatio').innerText = info.ratio;
+    document.getElementById('statNotes').innerText = info.notes || "";
+
+    const { va, vb, vc } = getLatticeVectors(sys);
+    const offset = gridN / 2;
+
+    let clipPlanes = null;
+    if (clipAtoms) {
+        const nA = vb.clone().cross(vc).normalize(), nB = vc.clone().cross(va).normalize(), nC = va.clone().cross(vb).normalize();
+        const minCart = fracToCart(-offset, -offset, -offset, va, vb, vc), maxCart = fracToCart(gridN - offset, gridN - offset, gridN - offset, va, vb, vc);
+        clipPlanes = [
+            new THREE.Plane(nA.clone(), -nA.dot(minCart)), new THREE.Plane(nA.clone().negate(), nA.dot(maxCart)),
+            new THREE.Plane(nB.clone(), -nB.dot(minCart)), new THREE.Plane(nB.clone().negate(), nB.dot(maxCart)),
+            new THREE.Plane(nC.clone(), -nC.dot(minCart)), new THREE.Plane(nC.clone().negate(), nC.dot(maxCart))
+        ];
+    }
+
+    if (showBox) {
+        const lineMat = new THREE.LineBasicMaterial({ color: PALETTE.wireframe, linewidth: 2 });
+        const points = [];
+        const edgePairs = [
+            [[0,0,0],[1,0,0]], [[1,0,0],[1,1,0]], [[1,1,0],[0,1,0]], [[0,1,0],[0,0,0]],
+            [[0,0,1],[1,0,1]], [[1,0,1],[1,1,1]], [[1,1,1],[0,1,1]], [[0,1,1],[0,0,1]],
+            [[0,0,0],[0,0,1]], [[1,0,0],[1,0,1]], [[1,1,0],[1,1,1]], [[0,1,0],[0,1,1]]
+        ];
+        for (let gx = 0; gx < gridN; gx++) {
+            for (let gy = 0; gy < gridN; gy++) {
+                for (let gz = 0; gz < gridN; gz++) {
+                    const ox = gx - offset, oy = gy - offset, oz = gz - offset;
+                    edgePairs.forEach(pair => {
+                        points.push(fracToCart(ox + pair[0][0], oy + pair[0][1], oz + pair[0][2], va, vb, vc));
+                        points.push(fracToCart(ox + pair[1][0], oy + pair[1][1], oz + pair[1][2], va, vb, vc));
+                    });
+                }
+            }
+        }
+        latticeGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), lineMat));
+        const axesHelper = new THREE.AxesHelper(1.2);
+        axesHelper.position.copy(fracToCart(-offset, -offset, -offset, va, vb, vc));
+        latticeGroup.add(axesHelper);
+    }
+
+    // Mathematical JEE Exact Ratios Fixes applied here
+    let rTd = useTrueRatio ? rScale * 0.225 : rScale * 0.45;
+    let rOh = useTrueRatio ? rScale * 0.414 : rScale * 0.55;
+    let rCubic = useTrueRatio ? rScale * 0.732 : rScale * 0.65;
+
+    // Distorted BCC Voids strict radius logic
+    if (type === 'BCC') {
+        rTd = useTrueRatio ? rScale * 0.291 : rScale * 0.35;
+        rOh = useTrueRatio ? rScale * 0.155 : rScale * 0.25;
+    }
+
+    const atomSet = new Map();
+    const pushAtom = (u, v, w, r, color, isVoid = false) => {
+        const pos = fracToCart(u, v, w, va, vb, vc);
+        const key = `${pos.x.toFixed(3)}_${pos.y.toFixed(3)}_${pos.z.toFixed(3)}`;
+        if (!atomSet.has(key)) atomSet.set(key, { pos, r, color, isVoid });
+    };
+
+    const corners = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1],[1,1,1]];
+    const faces = [[0.5,0.5,0],[0.5,0.5,1],[0.5,0,0.5],[0.5,1,0.5],[0,0.5,0.5],[1,0.5,0.5]];
+    const edges = [[0.5,0,0],[0.5,1,0],[0.5,0,1],[0.5,1,1],[0,0.5,0],[1,0.5,0],[0,0.5,1],[1,0.5,1],[0,0,0.5],[1,0,0.5],[0,1,0.5],[1,1,0.5]];
+    const tdPositions = [
+        [0.25,0.25,0.25],[0.75,0.25,0.25],[0.25,0.75,0.25],[0.75,0.75,0.25],
+        [0.25,0.25,0.75],[0.75,0.25,0.75],[0.25,0.75,0.75],[0.75,0.75,0.75]
+    ];
+    const bccTdPositions = [];
+    [0, 1].forEach(z => { bccTdPositions.push([0.5, 0.25, z], [0.5, 0.75, z], [0.25, 0.5, z], [0.75, 0.5, z]); });
+    [0, 1].forEach(y => { bccTdPositions.push([0.5, y, 0.25], [0.5, y, 0.75], [0.25, y, 0.5], [0.75, y, 0.5]); });
+    [0, 1].forEach(x => { bccTdPositions.push([x, 0.5, 0.25], [x, 0.5, 0.75], [x, 0.25, 0.5], [x, 0.75, 0.5]); });
+
+    for (let gx = 0; gx < gridN; gx++) {
+        for (let gy = 0; gy < gridN; gy++) {
+            for (let gz = 0; gz < gridN; gz++) {
+                const addAt = (u, v, w, r, col, isV = false) => pushAtom(gx + u - offset, gy + v - offset, gz + w - offset, r, col, isV);
+
+                if (showAtoms) {
+                    if (type === 'SC') corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom));
+                    else if (type === 'BCC') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); addAt(0.5, 0.5, 0.5, rScale, PALETTE.secondaryAtom); }
+                    else if (type === 'FCC') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.hostAtom)); }
+                    else if (type === 'HCP') {
+                        const hexBase = [[0,0], [1,0], [1,1], [0,1], [-1,0], [-1,-1], [0,-1]];
+                        hexBase.forEach(p => { addAt(p[0], p[1], 0, rScale, PALETTE.hostAtom); addAt(p[0], p[1], 1, rScale, PALETTE.hostAtom); });
+                        [[2/3, 1/3], [-1/3, 1/3], [-1/3, -2/3]].forEach(p => addAt(p[0], p[1], 0.5, rScale, PALETTE.secondaryAtom));
+                    }
+                    else if (type === 'NaCl') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.anionAtom)); addAt(0.5, 0.5, 0.5, rScale * 0.7, PALETTE.secondaryAtom); edges.forEach(e => addAt(...e, rScale * 0.7, PALETTE.secondaryAtom)); }
+                    else if (type === 'CsCl') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); addAt(0.5, 0.5, 0.5, rScale * 0.9, PALETTE.secondaryAtom); }
+                    else if (type === 'ZnS_Blende') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.anionAtom)); [[0.25,0.25,0.25],[0.75,0.75,0.25],[0.75,0.25,0.75],[0.25,0.75,0.75]].forEach(v => addAt(...v, rScale * 0.6, PALETTE.secondaryAtom)); }
+                    else if (type === 'CaF2') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.hostAtom)); tdPositions.forEach(v => addAt(...v, rScale * 0.5, PALETTE.secondaryAtom)); }
+                    else if (type === 'Na2O') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.anionAtom)); tdPositions.forEach(v => addAt(...v, rScale * 0.55, PALETTE.secondaryAtom)); }
+                    else if (type === 'Diamond') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.hostAtom)); [[0.25,0.25,0.25],[0.75,0.75,0.25],[0.75,0.25,0.75],[0.25,0.75,0.75]].forEach(v => addAt(...v, rScale, PALETTE.hostAtom)); }
+                }
+
+                if (voidType !== 'none') {
+                    if (voidType === 'cb') addAt(0.5, 0.5, 0.5, rCubic, PALETTE.voidCubic, true);
+                    if (voidType === 'td' || (voidType === 'both' && type !== 'BCC')) tdPositions.forEach(v => addAt(...v, rTd, PALETTE.voidTd, true));
+                    if (voidType === 'oh' || (voidType === 'both' && type !== 'BCC')) { addAt(0.5, 0.5, 0.5, rOh, PALETTE.voidOh, true); edges.forEach(e => addAt(...e, rOh, PALETTE.voidOh, true)); }
+                    
+                    // Render dynamically fixed BCC voids
+                    if (voidType === 'bcc_oh' || (voidType === 'both' && type === 'BCC')) {
+                        faces.forEach(f => addAt(...f, rOh, PALETTE.voidOh, true));
+                        edges.forEach(e => addAt(...e, rOh, PALETTE.voidOh, true));
+                    }
+                    if (voidType === 'bcc_td' || (voidType === 'both' && type === 'BCC')) {
+                        bccTdPositions.forEach(v => addAt(...v, rTd, PALETTE.voidTd, true));
+                    }
+                }
+            }
+        }
+    }
+
+    atomSet.forEach(data => latticeGroup.add(createSphere(data.pos, data.r, data.color, data.isVoid ? 0.9 : atomOpacity, clipPlanes, data.isVoid)));
+    if (document.getElementById('showPlane').checked) renderMillerPlane(gridN, va, vb, vc);
+    updateLegend(type, voidType, showAtoms);
+}
+
+function renderMillerPlane(gridN, va, vb, vc) {
+    const h = parseInt(document.getElementById('planeH').value) || 0, k = parseInt(document.getElementById('planeK').value) || 0, l = parseInt(document.getElementById('planeL').value) || 0;
+    if (h === 0 && k === 0 && l === 0) return;
+    const volume = va.dot(vb.clone().cross(vc));
+    if (Math.abs(volume) < 1e-6) return;
+
+    const normal = new THREE.Vector3().addScaledVector(vb.clone().cross(vc).divideScalar(volume), h).addScaledVector(vc.clone().cross(va).divideScalar(volume), k).addScaledVector(va.clone().cross(vb).divideScalar(volume), l);
+    const len = normal.length();
+    if (len === 0) return; normal.normalize();
+
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(gridN * 4, gridN * 4), new THREE.MeshBasicMaterial({ color: PALETTE.millerPlane, side: THREE.DoubleSide, transparent: true, opacity: 0.3, depthWrite: false }));
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    mesh.position.copy(normal).multiplyScalar(1.0 / len).add(fracToCart(-gridN / 2, -gridN / 2, -gridN / 2, va, vb, vc));
+    latticeGroup.add(mesh);
+}
+
+function updateLegend(type, voidType, showAtoms) {
+    const box = document.getElementById('legendBox');
+    box.innerHTML = '';
+    const addLegend = (colorHex, text) => box.innerHTML += `<div class="legend-item"><span class="legend-dot" style="background:${colorHex}; border-color:${colorHex}; box-shadow: 0 0 8px ${colorHex}80;"></span><span>${text}</span></div>`;
+
+    if (showAtoms) {
+        addLegend('#38bdf8', 'Host Lattice Atoms');
+        if (type === 'BCC') addLegend('#f43f5e', 'Body-Center Host Atom');
+        if (['NaCl', 'ZnS_Blende', 'Na2O', 'CaF2', 'CsCl'].includes(type)) addLegend('#10b981', 'Primary Anions/Lattice');
+    }
+
+    if (voidType === 'td' || voidType === 'bcc_td' || voidType === 'both') addLegend('#a855f7', 'Tetrahedral Void (Td)');
+    if (voidType === 'oh' || voidType === 'bcc_oh' || voidType === 'both') addLegend('#f59e0b', 'Octahedral Void (Oh)');
+    if (voidType === 'cb') addLegend('#ec4899', 'Cubic Void (Cb)');
+}
+
+function onWindowResize() {
+    const container = document.getElementById('viewport');
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+window.onload = () => { init(); animate(); };
+</script>
+</body>
+</html>
