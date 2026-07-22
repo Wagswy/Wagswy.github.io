@@ -169,7 +169,7 @@ margin-top: auto;
 
 <!-- Crystal Lattice Preset Selection -->
 <div class="control-card">
-<div class="card-title">Lattice & Structure Presets</div>
+<div class="card-title">Lattice &amp; Structure Presets</div>
 <div class="field-group">
 <select id="presetSelect">
 <optgroup label="Basic Lattices">
@@ -191,8 +191,8 @@ margin-top: auto;
 <div class="field-group">
 <label><span>Supercell Grid Size</span></label>
 <select id="gridSelect">
-<option value="1">1 Ã— 1 Ã— 1 Unit Cell</option>
-<option value="2">2 Ã— 2 Ã— 2 Supercell Grid</option>
+<option value="1">1 &times; 1 &times; 1 Unit Cell</option>
+<option value="2">2 &times; 2 &times; 2 Supercell Grid</option>
 </select>
 </div>
 </div>
@@ -221,17 +221,17 @@ margin-top: auto;
 
 <!-- Crystal System & Bravais Lattices -->
 <div class="control-card" id="systemCard">
-<div class="card-title">14 Bravais Lattices & Geometry</div>
+<div class="card-title">14 Bravais Lattices &amp; Geometry</div>
 <div class="field-group">
 <label><span>Crystal System</span></label>
 <select id="systemSelect">
-<option value="cubic">Cubic (a=b=c, Î±=Î²=Î³=90Â°)</option>
-<option value="tetrag">Tetragonal (a=bâ‰ c, Î±=Î²=Î³=90Â°)</option>
-<option value="ortho">Orthorhombic (aâ‰ bâ‰ c, Î±=Î²=Î³=90Â°)</option>
-<option value="hex">Hexagonal (a=bâ‰ c, Î±=Î²=90Â°, Î³=120Â°)</option>
-<option value="rhombo">Rhombohedral / Trigonal (a=b=c, Î±=Î²=Î³â‰ 90Â°)</option>
-<option value="mono">Monoclinic (aâ‰ bâ‰ c, Î±=Î³=90Â°, Î²â‰ 90Â°)</option>
-<option value="triclinic">Triclinic (aâ‰ bâ‰ c, Î±â‰ Î²â‰ Î³â‰ 90Â°)</option>
+<option value="cubic">Cubic (a=b=c, &alpha;=&beta;=&gamma;=90&deg;)</option>
+<option value="tetrag">Tetragonal (a=b&ne;c, &alpha;=&beta;=&gamma;=90&deg;)</option>
+<option value="ortho">Orthorhombic (a&ne;b&ne;c, &alpha;=&beta;=&gamma;=90&deg;)</option>
+<option value="hex">Hexagonal (a=b&ne;c, &alpha;=&beta;=90&deg;, &gamma;=120&deg;)</option>
+<option value="rhombo">Rhombohedral / Trigonal (a=b=c, &alpha;=&beta;=&gamma;&ne;90&deg;)</option>
+<option value="mono">Monoclinic (a&ne;b&ne;c, &alpha;=&gamma;=90&deg;, &beta;&ne;90&deg;)</option>
+<option value="triclinic">Triclinic (a&ne;b&ne;c, &alpha;&ne;&beta;&ne;&gamma;&ne;90&deg;)</option>
 </select>
 </div>
 <div class="field-group" style="margin-top: 10px;">
@@ -247,7 +247,7 @@ margin-top: auto;
 
 <!-- Rendering Controls -->
 <div class="control-card">
-<div class="card-title">Appearance & Rendering</div>
+<div class="card-title">Appearance &amp; Rendering</div>
 <div class="field-group">
 <label><span>Atom Radius Scale</span> <span id="radiusVal">0.22</span></label>
 <input type="range" id="radiusSlider" min="0.08" max="0.45" step="0.01" value="0.22">
@@ -310,16 +310,16 @@ margin-top: auto;
 <h3 id="infoTitle">Body-Centered Cubic <span class="hud-tag" id="hudTag">BCC</span></h3>
 <span id="distortedBadge" class="status-tag tag-on">Distorted Voids: INCLUDED</span>
 </div>
-<span class="toggle-icon">â–¼</span>
+<span class="toggle-icon">&#9660;</span>
 </div>
 
 <div id="hud-content">
 <div class="stat-group">
-<div class="stat-group-title">Physics & Geometry</div>
+<div class="stat-group-title">Physics &amp; Geometry</div>
 <div class="stat-row"><span class="stat-label">Effective Atoms (Z):</span><span class="stat-val" id="statZ">2</span></div>
 <div class="stat-row"><span class="stat-label">Coordination Number:</span><span class="stat-val" id="statCN">8</span></div>
 <div class="stat-row"><span class="stat-label">Packing Efficiency:</span><span class="stat-val" id="statPE">68%</span></div>
-<div class="stat-row"><span class="stat-label">Lattice Relation:</span><span class="stat-val" id="statRel">aâˆš3 = 4r</span></div>
+<div class="stat-row"><span class="stat-label">Lattice Relation:</span><span class="stat-val" id="statRel">a&radic;3 = 4r</span></div>
 </div>
 
 <div class="stat-group">
@@ -355,11 +355,11 @@ wireframe: 0x475569, // Slate
 
 const PRESETS = {
 BCC: {
-name: "Body-Centered Cubic", tag: "BCC", Z: "2", CN: "8", PE: "68%", Rel: "aâˆš3 = 4r", system: "cubic", bravais: "I",
+name: "Body-Centered Cubic", tag: "BCC", Z: "2", CN: "8", PE: "68%", Rel: "a&radic;3 = 4r", system: "cubic", bravais: "I",
 hasDistortedVoids: true,
 tdCount: "12 Effective (24 Sites)", ohCount: "6 Effective (18 Sites)", cubicCount: "0", ratio: "Td: 0.291 | Oh: 0.155",
-notes: "BCC Voids Breakdown:\nâ€¢ Distorted Td Voids: 24 sites on 6 faces (4 per face, shared by 2 cells) = 12 Effective Voids.\nâ€¢ Distorted Oh Voids: 6 face centers (6 Ã— 1/2 = 3) + 12 edge centers (12 Ã— 1/4 = 3) = 6 Effective Voids.\nâ€¢ Note: In BCC, Td voids (0.291) are geometrically larger than Oh voids (0.155).",
-notesDistortedOff: "BCC Voids Breakdown:\nâ€¢ Distorted Voids Toggle is OFF.\nâ€¢ Standard BCC possesses NO ideal/regular octahedral or tetrahedral voids.\nâ€¢ When distorted voids are excluded, effective Td = 0 and effective Oh = 0.\nâ€¢ Toggle 'Include Distorted Voids' ON to analyze non-ideal BCC void sites.",
+notes: "BCC Voids Breakdown:<br>&bull; Distorted Td Voids: 24 sites on 6 faces (4 per face, shared by 2 cells) = 12 Effective Voids.<br>&bull; Distorted Oh Voids: 6 face centers (6 &times; 1/2 = 3) + 12 edge centers (12 &times; 1/4 = 3) = 6 Effective Voids.<br>&bull; Note: In BCC, Td voids (0.291) are geometrically larger than Oh voids (0.155).",
+notesDistortedOff: "BCC Voids Breakdown:<br>&bull; Distorted Voids Toggle is OFF.<br>&bull; Standard BCC possesses NO ideal/regular octahedral or tetrahedral voids.<br>&bull; When distorted voids are excluded, effective Td = 0 and effective Oh = 0.<br>&bull; Toggle 'Include Distorted Voids' ON to analyze non-ideal BCC void sites.",
 voids: [
 { id: "none", label: "Hide Voids" },
 { id: "bcc_td", label: "Distorted Td Voids (12 Effective)", distorted: true },
@@ -374,9 +374,9 @@ notes: "Primitive cubic unit cell. Atoms touch along unit cell edges. Central cu
 voids: [{ id: "none", label: "Hide Voids" }, { id: "cb", label: "Cubic Void (Center)" }]
 },
 FCC: {
-name: "Face-Centered Cubic", tag: "FCC / CCP", Z: "4", CN: "12", PE: "74%", Rel: "aâˆš2 = 4r", system: "cubic", bravais: "F",
+name: "Face-Centered Cubic", tag: "FCC / CCP", Z: "4", CN: "12", PE: "74%", Rel: "a&radic;2 = 4r", system: "cubic", bravais: "F",
 tdCount: "8", ohCount: "4", cubicCount: "0", ratio: "Td: 0.225 | Oh: 0.414",
-notes: "ABCABC close packing. Td voids lie completely inside on body diagonals (8 total). Oh voids are at the body center (1) + edge centers (12 Ã— 1/4 = 3).",
+notes: "ABCABC close packing. Td voids lie completely inside on body diagonals (8 total). Oh voids are at the body center (1) + edge centers (12 &times; 1/4 = 3).",
 voids: [
 { id: "none", label: "Hide Voids" },
 { id: "td", label: "Tetrahedral Voids (Td)" },
@@ -385,7 +385,7 @@ voids: [
 ]
 },
 HCP: {
-name: "Hexagonal Close Packing", tag: "HCP", Z: "6", CN: "12", PE: "74%", Rel: "c/a = âˆš(8/3) â‰ˆ 1.633", system: "hex", bravais: "P",
+name: "Hexagonal Close Packing", tag: "HCP", Z: "6", CN: "12", PE: "74%", Rel: "c/a = &radic;(8/3) &approx; 1.633", system: "hex", bravais: "P",
 tdCount: "12", ohCount: "6", cubicCount: "0", ratio: "Td: 0.225 | Oh: 0.414",
 notes: "ABAB hexagonal close packing modeled as a full 3-cell hexagonal prism for visual clarity.",
 voids: [
@@ -395,37 +395,37 @@ voids: [
 ]
 },
 NaCl: {
-name: "Rock Salt (NaCl)", tag: "NaCl", Z: "4 Naâº + 4 Clâ»", CN: "6 : 6", PE: "79.3%", Rel: "râº + râ» = a/2", system: "cubic", bravais: "F",
-tdCount: "8 (Empty)", ohCount: "4 (Occupied by Naâº)", cubicCount: "0", ratio: "râº/râ» = 0.414",
-notes: "Clâ» forms FCC lattice. Naâº completely occupies all 4 Octahedral Voids.",
-voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Unoccupied Td Voids" }, { id: "oh", label: "Occupied Oh Voids (Naâº)" }]
+name: "Rock Salt (NaCl)", tag: "NaCl", Z: "4 Na<sup>+</sup> + 4 Cl<sup>-</sup>", CN: "6 : 6", PE: "79.3%", Rel: "r<sup>+</sup> + r<sup>-</sup> = a/2", system: "cubic", bravais: "F",
+tdCount: "8 (Empty)", ohCount: "4 (Occupied by Na+)", cubicCount: "0", ratio: "r<sup>+</sup>/r<sup>-</sup> = 0.414",
+notes: "Cl<sup>-</sup> forms FCC lattice. Na<sup>+</sup> completely occupies all 4 Octahedral Voids.",
+voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Unoccupied Td Voids" }, { id: "oh", label: "Occupied Oh Voids (Na+)" }]
 },
 CsCl: {
-name: "Cesium Chloride", tag: "CsCl", Z: "1 Csâº + 1 Clâ»", CN: "8 : 8", PE: "68%", Rel: "râº + râ» = aâˆš3/2", system: "cubic", bravais: "P",
-tdCount: "0", ohCount: "0", cubicCount: "1 (Occupied by Csâº)", ratio: "râº/râ» = 0.732",
-notes: "Clâ» forms Simple Cubic lattice. Csâº occupies the central Cubic Void.",
-voids: [{ id: "none", label: "Hide Voids" }, { id: "cb", label: "Occupied Cubic Void (Csâº)" }]
+name: "Cesium Chloride", tag: "CsCl", Z: "1 Cs<sup>+</sup> + 1 Cl<sup>-</sup>", CN: "8 : 8", PE: "68%", Rel: "r<sup>+</sup> + r<sup>-</sup> = a&radic;3/2", system: "cubic", bravais: "P",
+tdCount: "0", ohCount: "0", cubicCount: "1 (Occupied by Cs+)", ratio: "r<sup>+</sup>/r<sup>-</sup> = 0.732",
+notes: "Cl<sup>-</sup> forms Simple Cubic lattice. Cs<sup>+</sup> occupies the central Cubic Void.",
+voids: [{ id: "none", label: "Hide Voids" }, { id: "cb", label: "Occupied Cubic Void (Cs+)" }]
 },
 ZnS_Blende: {
-name: "Zinc Blende (Sphalerite)", tag: "Cubic ZnS", Z: "4 ZnÂ²âº + 4 SÂ²â»", CN: "4 : 4", PE: "74%", Rel: "râº + râ» = aâˆš3/4", system: "cubic", bravais: "F",
-tdCount: "8 (50% Filled)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "râº/râ» = 0.225",
-notes: "SÂ²â» forms FCC lattice. ZnÂ²âº occupies 50% alternate Tetrahedral Voids.",
-voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "All Td Sites (4 ZnÂ²âº + 4 Empty)" }, { id: "oh", label: "Unoccupied Oh Voids" }]
+name: "Zinc Blende (Sphalerite)", tag: "Cubic ZnS", Z: "4 Zn<sup>2+</sup> + 4 S<sup>2-</sup>", CN: "4 : 4", PE: "74%", Rel: "r<sup>+</sup> + r<sup>-</sup> = a&radic;3/4", system: "cubic", bravais: "F",
+tdCount: "8 (50% Filled)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "r<sup>+</sup>/r<sup>-</sup> = 0.225",
+notes: "S<sup>2-</sup> forms FCC lattice. Zn<sup>2+</sup> occupies 50% alternate Tetrahedral Voids.",
+voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "All Td Sites (4 Zn2+ + 4 Empty)" }, { id: "oh", label: "Unoccupied Oh Voids" }]
 },
 CaF2: {
-name: "Fluorite (CaF2)", tag: "CaF2", Z: "4 CaÂ²âº + 8 Fâ»", CN: "8 : 4", PE: "74%", Rel: "râº + râ» = aâˆš3/4", system: "cubic", bravais: "F",
-tdCount: "8 (100% Filled by Fâ»)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "râº/râ» = 0.225",
-notes: "CaÂ²âº forms FCC lattice. Fâ» occupies ALL 8 Tetrahedral Voids.",
-voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Occupied Td Voids (Fâ»)" }]
+name: "Fluorite (CaF2)", tag: "CaF2", Z: "4 Ca<sup>2+</sup> + 8 F<sup>-</sup>", CN: "8 : 4", PE: "74%", Rel: "r<sup>+</sup> + r<sup>-</sup> = a&radic;3/4", system: "cubic", bravais: "F",
+tdCount: "8 (100% Filled by F-)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "r<sup>+</sup>/r<sup>-</sup> = 0.225",
+notes: "Ca<sup>2+</sup> forms FCC lattice. F<sup>-</sup> occupies ALL 8 Tetrahedral Voids.",
+voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Occupied Td Voids (F-)" }]
 },
 Na2O: {
-name: "Anti-Fluorite (Na2O)", tag: "Na2O", Z: "4 OÂ²â» + 8 Naâº", CN: "4 : 8", PE: "74%", Rel: "râº + râ» = aâˆš3/4", system: "cubic", bravais: "F",
-tdCount: "8 (100% Filled by Naâº)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "râº/râ» = 0.225",
-notes: "OÂ²â» forms FCC lattice. Naâº occupies ALL 8 Tetrahedral Voids.",
-voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Occupied Td Voids (Naâº)" }]
+name: "Anti-Fluorite (Na2O)", tag: "Na2O", Z: "4 O<sup>2-</sup> + 8 Na<sup>+</sup>", CN: "4 : 8", PE: "74%", Rel: "r<sup>+</sup> + r<sup>-</sup> = a&radic;3/4", system: "cubic", bravais: "F",
+tdCount: "8 (100% Filled by Na+)", ohCount: "4 (Empty)", cubicCount: "0", ratio: "r<sup>+</sup>/r<sup>-</sup> = 0.225",
+notes: "O<sup>2-</sup> forms FCC lattice. Na<sup>+</sup> occupies ALL 8 Tetrahedral Voids.",
+voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Occupied Td Voids (Na+)" }]
 },
 Diamond: {
-name: "Diamond Cubic", tag: "C Diamond", Z: "8 Carbon Atoms", CN: "4", PE: "34%", Rel: "aâˆš3 = 8r", system: "cubic", bravais: "F",
+name: "Diamond Cubic", tag: "C Diamond", Z: "8 Carbon Atoms", CN: "4", PE: "34%", Rel: "a&radic;3 = 8r", system: "cubic", bravais: "F",
 tdCount: "8 (50% Filled)", ohCount: "0", cubicCount: "0", ratio: "Covalent",
 notes: "FCC Carbon lattice + 4 internal Carbon atoms occupying alternate Td voids.",
 voids: [{ id: "none", label: "Hide Voids" }, { id: "td", label: "Alternate Td Voids" }]
@@ -625,21 +625,22 @@ badge.innerText = "Distorted Voids: EXCLUDED";
 badge.className = "status-tag tag-off";
 }
 
-document.getElementById('statZ').innerText = info.Z;
-document.getElementById('statCN').innerText = info.CN;
-document.getElementById('statPE').innerText = info.PE;
-document.getElementById('statRel').innerText = info.Rel;
-document.getElementById('statCubic').innerText = info.cubicCount;
-document.getElementById('statRatio').innerText = info.ratio;
+// CHANGED TO INNERHTML SO TAGS RENDER PROPERLY
+document.getElementById('statZ').innerHTML = info.Z;
+document.getElementById('statCN').innerHTML = info.CN;
+document.getElementById('statPE').innerHTML = info.PE;
+document.getElementById('statRel').innerHTML = info.Rel;
+document.getElementById('statCubic').innerHTML = info.cubicCount;
+document.getElementById('statRatio').innerHTML = info.ratio;
 
 if (info.hasDistortedVoids && !allowDistorted) {
-document.getElementById('statTd').innerText = "0 (Distorted Excluded)";
-document.getElementById('statOh').innerText = "0 (Distorted Excluded)";
-document.getElementById('statNotes').innerText = info.notesDistortedOff || info.notes;
+document.getElementById('statTd').innerHTML = "0 (Distorted Excluded)";
+document.getElementById('statOh').innerHTML = "0 (Distorted Excluded)";
+document.getElementById('statNotes').innerHTML = info.notesDistortedOff || info.notes;
 } else {
-document.getElementById('statTd').innerText = info.tdCount;
-document.getElementById('statOh').innerText = info.ohCount;
-document.getElementById('statNotes').innerText = info.notes || "";
+document.getElementById('statTd').innerHTML = info.tdCount;
+document.getElementById('statOh').innerHTML = info.ohCount;
+document.getElementById('statNotes').innerHTML = info.notes || "";
 }
 
 const { va, vb, vc } = getLatticeVectors(sys);
