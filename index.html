@@ -597,7 +597,8 @@ return group;
 function buildLattice() {
 while(latticeGroup.children.length > 0) latticeGroup.remove(latticeGroup.children[0]);
 
-const type = document.getElementById('presetSelect').value;
+// 1. Change 'const' to 'let' so we can override it
+let type = document.getElementById('presetSelect').value; 
 const sys = document.getElementById('systemSelect').value;
 const bravaisType = document.getElementById('bravaisTypeSelect').value;
 const voidType = document.getElementById('voidSelect').value;
@@ -612,7 +613,17 @@ const showBox = document.getElementById('showBox').checked;
 const clipAtoms = document.getElementById('clipAtoms').checked;
 controls.autoRotate = document.getElementById('autoRotate').checked;
 
-const info = PRESETS[type] || PRESETS.BCC;
+// 2. ADD THIS: Detect if the user manually changed the System or Bravais dropdowns
+if (PRESETS[type] && (PRESETS[type].system !== sys || PRESETS[type].bravais !== bravaisType)) {
+    type = 'Custom'; 
+}
+
+// 3. UPDATE THIS: Provide safe fallback HUD info so the UI doesn't break
+const info = PRESETS[type] || {
+    name: "Custom Geometry", tag: "Custom", Z: "-", CN: "-", PE: "-", Rel: "-",
+    tdCount: "-", ohCount: "-", cubicCount: "-", ratio: "-",
+    notes: "Custom Bravais Lattice rendered based on manual system and centering selection."
+};
 document.getElementById('infoTitle').innerHTML = `${info.name} <span class="hud-tag">${info.tag}</span>`;
 
 // Update badge status
