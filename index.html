@@ -245,26 +245,6 @@ margin-top: auto;
 </div>
 </div>
 
-<!-- Symmetry Elements Control (New Addition) -->
-<div class="control-card">
-<div class="card-title">Symmetry Elements</div>
-<label class="toggle-row">
-<span>View Center of Symmetry (Point)</span>
-<input type="checkbox" id="showPointSym">
-<div class="switch"></div>
-</label>
-<label class="toggle-row">
-<span>View Planes of Symmetry</span>
-<input type="checkbox" id="showPlaneSym">
-<div class="switch"></div>
-</label>
-<label class="toggle-row">
-<span>View Axes of Symmetry (Lines)</span>
-<input type="checkbox" id="showLineSym">
-<div class="switch"></div>
-</label>
-</div>
-
 <!-- Rendering Controls -->
 <div class="control-card">
 <div class="card-title">Appearance &amp; Rendering</div>
@@ -371,9 +351,6 @@ voidOh: 0xf59e0b, // Amber (Oh)
 voidCubic: 0xec4899, // Pink
 millerPlane: 0xffffff, // White translucent
 wireframe: 0x475569, // Slate
-symCenter: 0xef4444, // Red for inversion center
-symPlane: 0x06b6d4, // Cyan for symmetry planes
-symLine: 0xeab308, // Yellow for symmetry axes
 };
 
 const PRESETS = {
@@ -480,7 +457,7 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 // Studio Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85); // Touchup: Slightly boosted for visual clarity
 scene.add(ambientLight);
 
 const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -559,6 +536,7 @@ voidSelect.appendChild(opt);
 });
 }
 
+// Reset selection if current option becomes disabled
 if (voidSelect.selectedOptions.length > 0 && voidSelect.selectedOptions[0].disabled) {
 voidSelect.value = 'none';
 } else if ([...voidSelect.options].some(opt => opt.value === currentVal && !opt.disabled)) {
@@ -639,11 +617,18 @@ if (PRESETS[type] && (PRESETS[type].system !== sys || PRESETS[type].bravais !== 
     type = 'Custom'; 
 }
 
-const info = PRESETS[type] || {
-    name: "Custom Geometry", tag: "Custom", Z: "-", CN: "-", PE: "-", Rel: "-",
-    tdCount: "-", ohCount: "-", cubicCount: "-", ratio: "-",
-    notes: "Custom Bravais Lattice rendered based on manual system and centering selection."
-};
+// 3. Provide safe fallback HUD info 
+let info = PRESETS[type];
+if (!info) {
+    info = {
+        name: sys === 'hex' ? "Hexagonal Geometry" : "Custom Geometry", 
+        tag: "Custom", Z: "-", CN: "-", PE: "-", Rel: "-",
+        tdCount: "-", ohCount: "-", cubicCount: "-", ratio: "-",
+        notes: sys === 'hex' 
+            ? "Hexagonal system rendered visually as a full 6-sided prism for clarity.<br><br><b>Note:</b> The true mathematical primitive cell of a Hexagonal Bravais Lattice is a 4-sided rhombic prism (1/3 of this geometry's volume)."
+            : "Custom Bravais Lattice rendered based on manual system and centering selection."
+    };
+}
 document.getElementById('infoTitle').innerHTML = `${info.name} <span class="hud-tag">${info.tag}</span>`;
 
 const badge = document.getElementById('distortedBadge');
@@ -675,55 +660,86 @@ document.getElementById('statNotes').innerHTML = info.notes || "";
 const { va, vb, vc } = getLatticeVectors(sys);
 const offset = gridN / 2;
 
+// Smart Clipping Touchup: Prevent mutilation of 6-sided hexagonal geometry laterally
 let clipPlanes = null;
 if (clipAtoms) {
-const nA = vb.clone().cross(vc).normalize(), nB = vc.clone().cross(va).normalize(), nC = va.clone().cross(vb).normalize();
-const minCart = fracToCart(-offset, -offset, -offset, va, vb, vc), maxCart = fracToCart(gridN - offset, gridN - offset, gridN - offset, va, vb, vc);
-clipPlanes = [
-new THREE.Plane(nA.clone(), -nA.dot(minCart)), new THREE.Plane(nA.clone().negate(), nA.dot(maxCart)),
-new THREE.Plane(nB.clone(), -nB.dot(minCart)), new THREE.Plane(nB.clone().negate(), nB.dot(maxCart)),
-new THREE.Plane(nC.clone(), -nC.dot(minCart)), new THREE.Plane(nC.clone().negate(), nC.dot(maxCart))
-];
+    clipPlanes = [];
+    const nC = va.clone().cross(vb).normalize();
+    
+    if (type === 'HCP' || sys === 'hex') {
+        // Hexagonal geometries require strictly Top & Bottom clipping to avoid cutting into the hexagon 
+        const pTop = new THREE.Plane(nC.clone().negate(), nC.dot(fracToCart(0, 0, gridN - offset, va, vb, vc)));
+        const pBot = new THREE.Plane(nC.clone(), -nC.dot(fracToCart(0, 0, -offset, va, vb, vc)));
+        clipPlanes.push(pTop, pBot);
+    } else {
+        const nA = vb.clone().cross(vc).normalize();
+        const nB = vc.clone().cross(va).normalize();
+        const minCart = fracToCart(-offset, -offset, -offset, va, vb, vc);
+        const maxCart = fracToCart(gridN - offset, gridN - offset, gridN - offset, va, vb, vc);
+        clipPlanes.push(
+            new THREE.Plane(nA.clone(), -nA.dot(minCart)), new THREE.Plane(nA.clone().negate(), nA.dot(maxCart)),
+            new THREE.Plane(nB.clone(), -nB.dot(minCart)), new THREE.Plane(nB.clone().negate(), nB.dot(maxCart)),
+            new THREE.Plane(nC.clone(), -nC.dot(minCart)), new THREE.Plane(nC.clone().negate(), nC.dot(maxCart))
+        );
+    }
 }
 
 if (showBox) {
-const lineMat = new THREE.LineBasicMaterial({ color: PALETTE.wireframe, linewidth: 2 });
-const points = [];
-let edgePairs;
-if (type === 'HCP' || sys === 'hex') {
-const hexVerts = [[1,0],[0,1],[-1,1],[-1,0],[0,-1],[1,-1]];
-edgePairs = [];
-for (let i = 0; i < 6; i++) {
-const v1 = hexVerts[i];
-const v2 = hexVerts[(i + 1) % 6];
-edgePairs.push([[v1[0], v1[1], 0], [v2[0], v2[1], 0]]);
-edgePairs.push([[v1[0], v1[1], 1], [v2[0], v2[1], 1]]);
-edgePairs.push([[v1[0], v1[1], 0], [v1[0], v1[1], 1]]);
-}
-} else {
-edgePairs = [
-[[0,0,0],[1,0,0]], [[1,0,0],[1,1,0]], [[1,1,0],[0,1,0]], [[0,1,0],[0,0,0]],
-[[0,0,1],[1,0,1]], [[1,0,1],[1,1,1]], [[1,1,1],[0,1,1]], [[0,1,1],[0,0,1]],
-[[0,0,0],[0,0,1]], [[1,0,0],[1,0,1]], [[1,1,0],[1,1,1]], [[0,1,0],[0,1,1]]
-];
-}
-for (let gx = 0; gx < gridN; gx++) {
-for (let gy = 0; gy < gridN; gy++) {
-for (let gz = 0; gz < gridN; gz++) {
-const ox = gx - offset, oy = gy - offset, oz = gz - offset;
-edgePairs.forEach(pair => {
-points.push(fracToCart(ox + pair[0][0], oy + pair[0][1], oz + pair[0][2], va, vb, vc));
-points.push(fracToCart(ox + pair[1][0], oy + pair[1][1], oz + pair[1][2], va, vb, vc));
-});
-}
-}
-}
-latticeGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), lineMat));
-const axesHelper = new THREE.AxesHelper(1.2);
-axesHelper.position.copy(fracToCart(-offset, -offset, -offset, va, vb, vc));
-latticeGroup.add(axesHelper);
+    const lineMat = new THREE.LineBasicMaterial({ color: PALETTE.wireframe, linewidth: 2 });
+    const points = [];
+    const addedLines = new Set(); // Line deduplication algorithm
+    
+    let edgePairs;
+    // Visually rendering the 6-sided prism for BOTH HCP and generic Custom Hexagonal models
+    if (type === 'HCP' || sys === 'hex') {
+        const hexVerts = [[1,0],[1,1],[0,1],[-1,0],[-1,-1],[0,-1]];
+        edgePairs = [];
+        for (let i = 0; i < 6; i++) {
+            const v1 = hexVerts[i];
+            const v2 = hexVerts[(i + 1) % 6];
+            edgePairs.push([[v1[0], v1[1], 0], [v2[0], v2[1], 0]]); // Bottom face
+            edgePairs.push([[v1[0], v1[1], 1], [v2[0], v2[1], 1]]); // Top face
+            edgePairs.push([[0, 0, 0], [v1[0], v1[1], 0]]); // Bottom spokes
+            edgePairs.push([[0, 0, 1], [v1[0], v1[1], 1]]); // Top spokes
+            edgePairs.push([[v1[0], v1[1], 0], [v1[0], v1[1], 1]]); // Vertical connecting edges
+        }
+        edgePairs.push([[0,0,0], [0,0,1]]); // Central vertical axis
+    } else {
+        edgePairs = [
+            [[0,0,0],[1,0,0]], [[1,0,0],[1,1,0]], [[1,1,0],[0,1,0]], [[0,1,0],[0,0,0]],
+            [[0,0,1],[1,0,1]], [[1,0,1],[1,1,1]], [[1,1,1],[0,1,1]], [[0,1,1],[0,0,1]],
+            [[0,0,0],[0,0,1]], [[1,0,0],[1,0,1]], [[1,1,0],[1,1,1]], [[0,1,0],[0,1,1]]
+        ];
+    }
+    
+    for (let gx = 0; gx < gridN; gx++) {
+        for (let gy = 0; gy < gridN; gy++) {
+            for (let gz = 0; gz < gridN; gz++) {
+                const ox = gx - offset, oy = gy - offset, oz = gz - offset;
+                edgePairs.forEach(pair => {
+                    const p1 = fracToCart(ox + pair[0][0], oy + pair[0][1], oz + pair[0][2], va, vb, vc);
+                    const p2 = fracToCart(ox + pair[1][0], oy + pair[1][1], oz + pair[1][2], va, vb, vc);
+                    
+                    // Deduplicating z-fighting lines for supercell structures
+                    const k1 = `${p1.x.toFixed(3)}_${p1.y.toFixed(3)}_${p1.z.toFixed(3)}`;
+                    const k2 = `${p2.x.toFixed(3)}_${p2.y.toFixed(3)}_${p2.z.toFixed(3)}`;
+                    const lineKey = k1 < k2 ? `${k1}-${k2}` : `${k2}-${k1}`;
+                    
+                    if (!addedLines.has(lineKey)) {
+                        addedLines.add(lineKey);
+                        points.push(p1, p2);
+                    }
+                });
+            }
+        }
+    }
+    latticeGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), lineMat));
+    const axesHelper = new THREE.AxesHelper(1.2);
+    axesHelper.position.copy(fracToCart(-offset, -offset, -offset, va, vb, vc));
+    latticeGroup.add(axesHelper);
 }
 
+// Radius ratio logic
 let rTd = useTrueRatio ? rScale * 0.225 : rScale * 0.45;
 let rOh = useTrueRatio ? rScale * 0.414 : rScale * 0.55;
 let rCubic = useTrueRatio ? rScale * 0.732 : rScale * 0.65;
@@ -761,10 +777,10 @@ if (showAtoms) {
 if (type === 'SC') corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom));
 else if (type === 'BCC') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); addAt(0.5, 0.5, 0.5, rScale, PALETTE.secondaryAtom); }
 else if (type === 'FCC') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.hostAtom)); }
-else if (type === 'HCP' || sys === 'hex') {
-const hexBase = [[1,0], [0,1], [-1,1], [-1,0], [0,-1], [1,-1], [0,0]];
+else if (type === 'HCP') {
+const hexBase = [[0,0], [1,0], [1,1], [0,1], [-1,0], [-1,-1], [0,-1]];
 hexBase.forEach(p => { addAt(p[0], p[1], 0, rScale, PALETTE.hostAtom); addAt(p[0], p[1], 1, rScale, PALETTE.hostAtom); });
-[[2/3, 1/3, 0.5], [1/3, 2/3, 0.5]].forEach(p => addAt(...p, rScale, PALETTE.secondaryAtom));
+[[2/3, 1/3], [-1/3, 1/3], [-1/3, -2/3]].forEach(p => addAt(p[0], p[1], 0.5, rScale, PALETTE.secondaryAtom));
 }
 else if (type === 'NaCl') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.anionAtom)); addAt(0.5, 0.5, 0.5, rScale * 0.7, PALETTE.secondaryAtom); edges.forEach(e => addAt(...e, rScale * 0.7, PALETTE.secondaryAtom)); }
 else if (type === 'CsCl') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); addAt(0.5, 0.5, 0.5, rScale * 0.9, PALETTE.secondaryAtom); }
@@ -772,7 +788,28 @@ else if (type === 'ZnS_Blende') { corners.forEach(c => addAt(...c, rScale, PALET
 else if (type === 'CaF2') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.hostAtom)); tdPositions.forEach(v => addAt(...v, rScale * 0.5, PALETTE.secondaryAtom)); }
 else if (type === 'Na2O') { corners.forEach(c => addAt(...c, rScale, PALETTE.anionAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.anionAtom)); tdPositions.forEach(v => addAt(...v, rScale * 0.55, PALETTE.secondaryAtom)); }
 else if (type === 'Diamond') { corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom)); faces.forEach(f => addAt(...f, rScale, PALETTE.hostAtom)); [[0.25,0.25,0.25],[0.75,0.75,0.25],[0.75,0.25,0.75],[0.25,0.75,0.75]].forEach(v => addAt(...v, rScale, PALETTE.hostAtom)); }
+else if (sys === 'hex') {
+// Fix: Mapping custom Hexagonal model visually to the expanded 6-sided structure like HCP
+const hexBase = [[0,0], [1,0], [1,1], [0,1], [-1,0], [-1,-1], [0,-1]];
+hexBase.forEach(p => { 
+    addAt(p[0], p[1], 0, rScale, PALETTE.hostAtom); 
+    addAt(p[0], p[1], 1, rScale, PALETTE.hostAtom); 
+});
+
+// Allowing custom centering behaviors just for user exploration
+if (bravaisType === 'I') {
+    addAt(0, 0, 0.5, rScale, PALETTE.secondaryAtom); 
+} else if (bravaisType === 'F') {
+    addAt(0.5, 0, 0.5, rScale, PALETTE.secondaryAtom);
+    addAt(0, 0.5, 0.5, rScale, PALETTE.secondaryAtom);
+    addAt(0.5, 0.5, 0.5, rScale, PALETTE.secondaryAtom);
+} else if (bravaisType === 'C') {
+    addAt(0, 0, 0, rScale, PALETTE.secondaryAtom);
+    addAt(0, 0, 1, rScale, PALETTE.secondaryAtom);
+}
+}
 else {
+// Other Standard Dynamic Renderings
 corners.forEach(c => addAt(...c, rScale, PALETTE.hostAtom));
 if (bravaisType === 'I') addAt(0.5, 0.5, 0.5, rScale, PALETTE.secondaryAtom);
 else if (bravaisType === 'F') faces.forEach(f => addAt(...f, rScale, PALETTE.secondaryAtom));
@@ -789,12 +826,23 @@ if (voidType === 'td' || (voidType === 'both' && type !== 'BCC' && type !== 'HCP
 if (voidType === 'oh' || (voidType === 'both' && type !== 'BCC' && type !== 'HCP')) { addAt(0.5, 0.5, 0.5, rOh, PALETTE.voidOh, true); edges.forEach(e => addAt(...e, rOh, PALETTE.voidOh, true)); }
 
 if (voidType === 'hcp_oh' || (voidType === 'both' && type === 'HCP')) {
-const hcpOhPositions = [[1/3, 2/3, 0.25], [1/3, 2/3, 0.75], [2/3, 1/3, 0.25], [2/3, 1/3, 0.75]];
+const hcpOhPositions = [
+[1/3, 2/3, 0.25], [1/3, 2/3, 0.75],
+[-2/3, 1/3, 0.25], [-2/3, 1/3, 0.75],
+[1/3, -1/3, 0.25], [1/3, -1/3, 0.75]
+];
 hcpOhPositions.forEach(v => addAt(...v, rOh, PALETTE.voidOh, true));
 }
 
 if (voidType === 'hcp_td' || (voidType === 'both' && type === 'HCP')) {
-const hcpTdPositions = [[1/3, 2/3, 0.125], [2/3, 1/3, 0.375]];
+const hcpTdPositions = [
+[2/3, 1/3, 0.125], [2/3, 1/3, 0.875],
+[-1/3, 1/3, 0.125], [-1/3, 1/3, 0.875],
+[-1/3, -2/3, 0.125], [-1/3, -2/3, 0.875],
+[1/3, 2/3, 0.375], [1/3, 2/3, 0.625],
+[-2/3, 1/3, 0.375], [-2/3, 1/3, 0.625],
+[1/3, -1/3, 0.375], [1/3, -1/3, 0.625]
+];
 hcpTdPositions.forEach(v => addAt(...v, rTd, PALETTE.voidTd, true));
 }
 
@@ -813,53 +861,8 @@ bccTdPositions.forEach(v => addAt(...v, rTd, PALETTE.voidTd, true));
 }
 
 atomSet.forEach(data => latticeGroup.add(createSphere(data.pos, data.r, data.color, data.isVoid ? 0.9 : atomOpacity, clipPlanes, data.isVoid)));
-
-// Handle Symmetry Elements Overlay Toggles
-renderSymmetryElements(gridN, va, vb, vc);
-
 if (document.getElementById('showPlane').checked) renderMillerPlane(gridN, va, vb, vc);
 updateLegend(type, voidType, showAtoms, allowDistorted);
-}
-
-function renderSymmetryElements(gridN, va, vb, vc) {
-const showPoint = document.getElementById('showPointSym').checked;
-const showPlane = document.getElementById('showPlaneSym').checked;
-const showLine = document.getElementById('showLineSym').checked;
-
-const centerPos = fracToCart(0, 0, 0, va, vb, vc);
-
-// 1. Center of Symmetry (Point)
-if (showPoint) {
-const pointGeo = new THREE.SphereGeometry(0.08, 16, 16);
-const pointMat = new THREE.MeshBasicMaterial({ color: PALETTE.symCenter });
-const pointMesh = new THREE.Mesh(pointGeo, pointMat);
-pointMesh.position.copy(centerPos);
-latticeGroup.add(pointMesh);
-}
-
-// 2. Planes of Symmetry
-if (showPlane) {
-const planeMat = new THREE.MeshBasicMaterial({ color: PALETTE.symPlane, side: THREE.DoubleSide, transparent: true, opacity: 0.35 });
-const p1 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), planeMat);
-latticeGroup.add(p1);
-
-const p2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), planeMat);
-p2.rotation.y = Math.PI / 2;
-latticeGroup.add(p2);
-}
-
-// 3. Axes of Symmetry (Lines)
-if (showLine) {
-const lineMat = new THREE.LineBasicMaterial({ color: PALETTE.symLine, linewidth: 3 });
-const pointsX = [fracToCart(-1, 0, 0, va, vb, vc), fracToCart(1, 0, 0, va, vb, vc)];
-latticeGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pointsX), lineMat));
-
-const pointsY = [fracToCart(0, -1, 0, va, vb, vc), fracToCart(0, 1, 0, va, vb, vc)];
-latticeGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pointsY), lineMat));
-
-const pointsZ = [fracToCart(0, 0, -1, va, vb, vc), fracToCart(0, 0, 1, va, vb, vc)];
-latticeGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pointsZ), lineMat));
-}
 }
 
 function renderMillerPlane(gridN, va, vb, vc) {
@@ -889,12 +892,8 @@ if (type === 'BCC' || type === 'HCP') addLegend('#f43f5e', 'Secondary/Interior A
 if (['NaCl', 'ZnS_Blende', 'Na2O', 'CaF2', 'CsCl'].includes(type)) addLegend('#10b981', 'Primary Anions/Lattice');
 }
 
-if (document.getElementById('showPointSym').checked) addLegend('#ef4444', 'Center of Symmetry (Point)');
-if (document.getElementById('showPlaneSym').checked) addLegend('#06b6d4', 'Plane of Symmetry');
-if (document.getElementById('showLineSym').checked) addLegend('#eab308', 'Axis of Symmetry (Line)');
-
 if (type === 'BCC' && !allowDistorted) {
-// Excluded
+// Distorted voids excluded, omit void items from legend
 } else {
 if (voidType === 'td' || voidType === 'bcc_td' || voidType === 'hcp_td' || voidType === 'both') addLegend('#a855f7', 'Tetrahedral Void (Td)');
 if (voidType === 'oh' || voidType === 'bcc_oh' || voidType === 'hcp_oh' || voidType === 'both') addLegend('#f59e0b', 'Octahedral Void (Oh)');
